@@ -37,7 +37,7 @@ if __name__ == '__main__':
     if hasattr(args, "level_name"):
         u.unpack_level(args.level_name)
     if hasattr(args, "skin_name"):
-        u.unpack_level(args.skin_name)
+        u.unpack_skin(args.skin_name)
     if hasattr(args, "bg_name"):
         u.unpack_background(args.bg_name)
     if hasattr(args, "effect_name"):
