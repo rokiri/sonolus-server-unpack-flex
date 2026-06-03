@@ -19,7 +19,11 @@ Add repository folder to `PATH` in order to access script in other directories.
 ```
 # Unpack Bandori engine
 ssu.py -s <SERVER URL> engine bandori
+    or
+python ssu.py -s <SEVER URL> engine bandori
 
 # Unpack level
 ssu.py -s <SERVER URL> level 12203
+    or
+python ssu.py -s <SERVER URL> level 12345
 ```
