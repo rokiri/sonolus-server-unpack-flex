@@ -10,10 +10,15 @@ import requests
 class Unpacker:
 
     def __init__(self, baseurl: str, target_dir: str, is_verbose: bool = False):
+        if not baseurl.startswith(("http://", "https://")):
+            baseurl = "https://" + baseurl
         self.baseurl = baseurl
         self.target_dir = target_dir
-        self.locale = "en"  # TODO: assume en for now
+        self.locale = "en"
         self.is_verbose = is_verbose
+        self.headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+        }
 
     def unpack_level(self, name: str):
         res_url = self.__get_absolute_url(f"levels/{name}")
@@ -70,19 +75,19 @@ class Unpacker:
                 "title": self.__convert_to_localization_text(data["item"]["title"]),
                 "subtitle": self.__convert_to_localization_text(data["item"]["subtitle"]),
                 "author": self.__convert_to_localization_text(data["item"]["author"]),
-                "description": self.__convert_to_localization_text(data["description"]),
+                "description": self.__convert_to_localization_text(data.get("description", "")),
             }, f, indent=2)
 
         thumbnail_url = self.__get_absolute_url(
             data["item"]["thumbnail"]["url"]
         )
-        download_file(thumbnail_url, os.path.join(res_dir, "thumbnail.png"))
+        download_file(thumbnail_url, os.path.join(res_dir, "thumbnail.png"), self.headers)
 
         data_url = self.__get_absolute_url(data["item"]["data"]["url"])
-        download_unzip_file(data_url, os.path.join(res_dir, "data.json"))
+        download_unzip_file(data_url, os.path.join(res_dir, "data.json"), self.headers)
 
         texture_url = self.__get_absolute_url(data["item"]["texture"]["url"])
-        download_file(texture_url, os.path.join(res_dir, "texture.png"))
+        download_file(texture_url, os.path.join(res_dir, "texture.png"), self.headers)
 
     def unpack_background(self, name: str):
         res_url = self.__get_absolute_url(f"backgrounds/{name}")
@@ -106,13 +111,13 @@ class Unpacker:
         thumbnail_url = self.__get_absolute_url(
             data["item"]["thumbnail"]["url"]
         )
-        download_file(thumbnail_url, os.path.join(res_dir, "thumbnail.png"))
+        download_file(thumbnail_url, os.path.join(res_dir, "thumbnail.png"), self.headers)
 
         data_url = self.__get_absolute_url(data["item"]["data"]["url"])
-        download_unzip_file(data_url, os.path.join(res_dir, "data.json"))
+        download_unzip_file(data_url, os.path.join(res_dir, "data.json"), self.headers)
 
         image_url = self.__get_absolute_url(data["item"]["image"]["url"])
-        download_file(image_url, os.path.join(res_dir, "image.png"))
+        download_file(image_url, os.path.join(res_dir, "image.png"), self.headers)
 
         configuration_url = self.__get_absolute_url(
             data["item"]["configuration"]["url"]
@@ -260,7 +265,9 @@ class Unpacker:
             return url
         else:
             url = url.strip("/")
-            return os.path.join(self.baseurl, url).replace("\\", "/")
+            if url.startswith("sonolus/") and self.baseurl.rstrip("/").endswith("/sonolus"):
+             url = url[len("sonolus/"):]
+            return self.baseurl.rstrip("/") + "/" + url
 
     def __convert_to_localization_text(self, data: Any) -> Dict[str, str]:
         if type(data) == str:
@@ -271,21 +278,25 @@ class Unpacker:
             return data
 
 
-def download_file(url: str, target_filename: str):
-    """Downloads a file.
-    https://stackoverflow.com/questions/16694907/download-large-file-in-python-with-requests
-    """
-    with requests.get(url, stream=True) as r:
+def download_file(url: str, target_filename: str, headers: dict = {}):
+    print(f"Downloading: {url}")
+    print(f"Headers: {headers}")
+    with requests.get(url, stream=True, headers=headers) as r:
+        print(f"Status: {r.status_code}")
         with open(target_filename, 'wb') as f:
             shutil.copyfileobj(r.raw, f)
 
-
-def download_unzip_file(url: str, target_filename: str):
-    """Downloads and unzips a file.
-    """
+def download_unzip_file(url: str, target_filename: str, headers: dict = {}):
     archive_filename = target_filename + ".gz"
-    download_file(url, archive_filename)
-    with gzip.open(archive_filename, "rb") as f_in:
-        with open(target_filename, "wb") as f_out:
-            shutil.copyfileobj(f_in, f_out)
-    os.remove(archive_filename)
+    download_file(url, archive_filename, headers)
+    
+    with open(archive_filename, "rb") as f:
+        magic = f.read(2)
+    
+    if magic == b'\x1f\x8b':
+        with gzip.open(archive_filename, "rb") as f_in:
+            with open(target_filename, "wb") as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        os.remove(archive_filename)
+    else:
+        os.replace(archive_filename, target_filename)
