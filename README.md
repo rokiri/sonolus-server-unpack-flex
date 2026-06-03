@@ -1,5 +1,7 @@
 # sonolus-server-unpack-flex
 
+fork of ['sonolus-unpacker'](https://github.com/carbeni/sonolus-server-unpack)
+
 Unpack resources from Sonolus servers. Unpacked folder structure intended to be
 compatible with [`sonolus-pack`](https://github.com/Sonolus/sonolus-pack).
 
