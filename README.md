@@ -1,4 +1,4 @@
-# sonolus-server-unpack
+# sonolus-server-unpack-flex
 
 Unpack resources from Sonolus servers. Unpacked folder structure intended to be
 compatible with [`sonolus-pack`](https://github.com/Sonolus/sonolus-pack).
